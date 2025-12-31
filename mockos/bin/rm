@@ -1,0 +1,68 @@
+import os
+import shutil
+import argparse
+
+
+def main():
+    """Remove files or directories."""
+    parser = argparse.ArgumentParser(description="Remove files or directories")
+    parser.add_argument("-r", "-R", "--recursive", action="store_true", help="remove directories and their contents recursively")
+    parser.add_argument("-f", "--force", action="store_true", help="ignore nonexistent files and arguments, never prompt")
+    parser.add_argument("-v", "--verbose", action="store_true", help="explain what is being done")
+    parser.add_argument("targets", nargs="+", help="files or directories to remove")
+    
+    args = parser.parse_args()
+    
+    base_path = os.environ.get("MOCKOS_BASE_PATH", "mockos")
+    cwd = os.environ.get("MOCKOS_CWD", "/root")
+    
+    for target in args.targets:
+        remove_target(base_path, cwd, target, args.recursive, args.force, args.verbose)
+
+
+def remove_target(base_path: str, cwd: str, path: str, recursive: bool, force: bool, verbose: bool):
+    """Remove a single file or directory."""
+    if path.startswith("/"):
+        full_path = f"{base_path}{path}"
+    else:
+        if cwd == "/":
+            full_path = f"{base_path}/{path}"
+        else:
+            full_path = f"{base_path}{cwd}/{path}"
+
+    if not os.path.exists(full_path):
+        if not force:
+            print(f"rm: cannot remove '{path}': No such file or directory")
+        return
+
+    if os.path.isfile(full_path) or os.path.islink(full_path):
+        try:
+            os.remove(full_path)
+            if verbose:
+                print(f"removed '{path}'")
+        except PermissionError:
+            if not force:
+                print(f"rm: cannot remove '{path}': Permission denied")
+        except OSError as e:
+            if not force:
+                print(f"rm: cannot remove '{path}': {e}")
+    elif os.path.isdir(full_path):
+        if not recursive:
+            if not force:
+                print(f"rm: cannot remove '{path}': Is a directory")
+            return
+
+        try:
+            shutil.rmtree(full_path)
+            if verbose:
+                print(f"removed directory '{path}'")
+        except PermissionError:
+            if not force:
+                print(f"rm: cannot remove '{path}': Permission denied")
+        except OSError as e:
+            if not force:
+                print(f"rm: cannot remove '{path}': {e}")
+
+
+if __name__ == "__main__":
+    main()

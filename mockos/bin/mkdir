@@ -1,0 +1,67 @@
+import os
+import argparse
+
+
+def main():
+    """Create directories."""
+    parser = argparse.ArgumentParser(description="Create directories")
+    parser.add_argument("-p", "--parents", action="store_true", help="no error if existing, make parent directories as needed")
+    parser.add_argument("-v", "--verbose", action="store_true", help="print a message for each created directory")
+    parser.add_argument("directories", nargs="+", help="directories to create")
+    
+    args = parser.parse_args()
+    
+    base_path = os.environ.get("MOCKOS_BASE_PATH", "mockos")
+    cwd = os.environ.get("MOCKOS_CWD", "/root")
+    
+    for directory in args.directories:
+        create_directory(base_path, cwd, directory, args.parents, args.verbose)
+
+
+def create_directory(base_path: str, cwd: str, path: str, create_parents: bool, verbose: bool):
+    """Create a single directory."""
+    if path.startswith("/"):
+        full_path = f"{base_path}{path}"
+    else:
+        if cwd == "/":
+            full_path = f"{base_path}/{path}"
+        else:
+            full_path = f"{base_path}{cwd}/{path}"
+    
+    if os.path.exists(full_path):
+        if os.path.isdir(full_path):
+            if not create_parents:
+                print(f"mkdir: cannot create directory '{path}': File exists")
+            return
+        else:
+            print(f"mkdir: cannot create directory '{path}': File exists")
+            return
+    
+    if create_parents:
+        try:
+            os.makedirs(full_path, exist_ok=True)
+            if verbose:
+                print(f"mkdir: created directory '{path}'")
+        except PermissionError:
+            print(f"mkdir: cannot create directory '{path}': Permission denied")
+        except OSError as e:
+            print(f"mkdir: cannot create directory '{path}': {e}")
+    else:
+        parent_dir = os.path.dirname(full_path)
+        
+        if parent_dir and not os.path.exists(parent_dir):
+            print(f"mkdir: cannot create directory '{path}': No such file or directory")
+            return
+        
+        try:
+            os.mkdir(full_path)
+            if verbose:
+                print(f"mkdir: created directory '{path}'")
+        except PermissionError:
+            print(f"mkdir: cannot create directory '{path}': Permission denied")
+        except OSError as e:
+            print(f"mkdir: cannot create directory '{path}': {e}")
+
+
+if __name__ == "__main__":
+    main()
