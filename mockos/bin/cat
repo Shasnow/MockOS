@@ -16,6 +16,8 @@ def main():
     base_path = os.environ.get("MOCKOS_BASE_PATH", "mockos")
     cwd = os.environ.get("MOCKOS_CWD", "/root")
     
+    exit_code = 0  # 默认成功
+    
     for file_arg in args.files:
         if file_arg.startswith("/"):
             full_path = f"{base_path}{file_arg}"
@@ -27,10 +29,12 @@ def main():
         
         if not os.path.exists(full_path):
             print(f"cat: {file_arg}: No such file or directory")
+            exit_code = 1  # 文件不存在
             continue
         
         if os.path.isdir(full_path):
             print(f"cat: {file_arg}: Is a directory")
+            exit_code = 1  # 是目录而不是文件
             continue
         
         try:
@@ -49,8 +53,12 @@ def main():
                         sys.stdout.write(line)
         except PermissionError:
             print(f"cat: {file_arg}: Permission denied")
+            exit_code = 1  # 权限错误
         except Exception as e:
             print(f"cat: {file_arg}: {str(e)}")
+            exit_code = 1  # 其他错误
+    
+    exit(exit_code)
 
 
 if __name__ == "__main__":

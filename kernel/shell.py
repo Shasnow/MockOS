@@ -17,7 +17,7 @@ class MockOSShell:
             target = self.env.USR_HOME
         elif target == "-":
             print(f"cd: OLDPWD not set")
-            return
+            return 1
         
         if target.startswith("/"):
             new_cwd = target
@@ -41,10 +41,11 @@ class MockOSShell:
         
         if not os.path.exists(full_path):
             print(f"cd: {arg}: No such file or directory")
-            return
+            return 1
         
         if not os.path.isdir(full_path):
             print(f"cd: {arg}: Not a directory")
-            return
+            return 1
         
         self.env.CWD = new_cwd
+        return 0

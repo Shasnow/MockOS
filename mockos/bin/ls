@@ -27,24 +27,24 @@ def main():
     
     if not os.path.exists(full_path):
         print(f"ls: cannot access '{path}': No such file or directory")
-        return
+        exit(2)
     
     if os.path.isfile(full_path):
         if args.long:
             print(get_file_info(full_path))
         else:
             print(os.path.basename(full_path))
-        return
+        exit(0)  # 成功
     
     if not os.path.isdir(full_path):
         print(f"ls: cannot access '{path}': No such file or directory")
-        return
+        exit(2)
     
     try:
         entries = os.listdir(full_path)
     except PermissionError:
         print(f"ls: cannot open directory '{path}': Permission denied")
-        return
+        exit(1)
     
     entries.sort()
     
@@ -71,6 +71,8 @@ def main():
             else:
                 display_items.append(entry)
         print("  ".join(display_items))
+    
+    exit(0)  # 成功
 
 
 def get_file_info(path: str) -> str:
