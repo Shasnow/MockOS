@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import argparse
 
@@ -37,7 +38,7 @@ def remove_target(base_path: str, cwd: str, path: str, recursive: bool, force: b
 
     if not os.path.exists(full_path):
         if not force:
-            print(f"rm: cannot remove '{path}': No such file or directory")
+            print(f"rm: cannot remove '{path}': No such file or directory", file=sys.stderr)
             return False
         else:
             return True  # 使用了 -f 选项，文件不存在不算错误
@@ -50,20 +51,20 @@ def remove_target(base_path: str, cwd: str, path: str, recursive: bool, force: b
             return True
         except PermissionError:
             if not force:
-                print(f"rm: cannot remove '{path}': Permission denied")
+                print(f"rm: cannot remove '{path}': Permission denied", file=sys.stderr)
                 return False
             else:
                 return True  # 使用了 -f 选项，权限错误不算错误
         except OSError as e:
             if not force:
-                print(f"rm: cannot remove '{path}': {e}")
+                print(f"rm: cannot remove '{path}': {e}", file=sys.stderr)
                 return False
             else:
                 return True  # 使用了 -f 选项，其他错误不算错误
     elif os.path.isdir(full_path):
         if not recursive:
             if not force:
-                print(f"rm: cannot remove '{path}': Is a directory")
+                print(f"rm: cannot remove '{path}': Is a directory", file=sys.stderr)
                 return False
             else:
                 return True  # 使用了 -f 选项，目录不算错误
@@ -75,13 +76,13 @@ def remove_target(base_path: str, cwd: str, path: str, recursive: bool, force: b
             return True
         except PermissionError:
             if not force:
-                print(f"rm: cannot remove '{path}': Permission denied")
+                print(f"rm: cannot remove '{path}': Permission denied", file=sys.stderr)
                 return False
             else:
                 return True  # 使用了 -f 选项，权限错误不算错误
         except OSError as e:
             if not force:
-                print(f"rm: cannot remove '{path}': {e}")
+                print(f"rm: cannot remove '{path}': {e}", file=sys.stderr)
                 return False
             else:
                 return True  # 使用了 -f 选项，其他错误不算错误

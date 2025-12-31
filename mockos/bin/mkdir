@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 
 
@@ -36,12 +37,12 @@ def create_directory(base_path: str, cwd: str, path: str, create_parents: bool, 
     if os.path.exists(full_path):
         if os.path.isdir(full_path):
             if not create_parents:
-                print(f"mkdir: cannot create directory '{path}': File exists")
+                print(f"mkdir: cannot create directory '{path}': File exists", file=sys.stderr)
                 return False
             else:
                 return True  # 目录已存在，且使用了 -p 选项，视为成功
         else:
-            print(f"mkdir: cannot create directory '{path}': File exists")
+            print(f"mkdir: cannot create directory '{path}': File exists", file=sys.stderr)
             return False
     
     if create_parents:
@@ -51,16 +52,16 @@ def create_directory(base_path: str, cwd: str, path: str, create_parents: bool, 
                 print(f"mkdir: created directory '{path}'")
             return True
         except PermissionError:
-            print(f"mkdir: cannot create directory '{path}': Permission denied")
+            print(f"mkdir: cannot create directory '{path}': Permission denied", file=sys.stderr)
             return False
         except OSError as e:
-            print(f"mkdir: cannot create directory '{path}': {e}")
+            print(f"mkdir: cannot create directory '{path}': {e}", file=sys.stderr)
             return False
     else:
         parent_dir = os.path.dirname(full_path)
         
         if parent_dir and not os.path.exists(parent_dir):
-            print(f"mkdir: cannot create directory '{path}': No such file or directory")
+            print(f"mkdir: cannot create directory '{path}': No such file or directory", file=sys.stderr)
             return False
         
         try:

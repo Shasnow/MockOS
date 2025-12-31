@@ -18,25 +18,44 @@ class MockOS(cmd.Cmd):
         """Exit the program."""
         return True
 
-    def do_cd(self, arg):
-        self._last_exit_code = self.shell.cd(arg)
-        self.update_prompt()
-
     def do_EOF(self, _):
         """Exit the program."""
+        print()  # 打印一个换行符
         return True
 
     def emptyline(self):
         return
     
     def onecmd(self, line):
-        """重写 onecmd 方法以支持命令链操作符"""
-        # 解析包含 && 和 || 操作符的命令行
+        """重写 onecmd 方法以支持命令链操作符和管道"""
+        # 解析包含 &&、|| 和 | 操作符的命令行
         commands = self.parse_command_line(line)
         last_exit_code = 0
         should_execute = True  # 当前命令是否应该执行
         
-        for i, (cmd, _) in enumerate(commands):
+        i = 0
+        while i < len(commands):
+            cmd, operator = commands[i]
+            
+            # 检查是否需要执行管道命令序列
+            if operator == '|':
+                # 收集管道中的所有命令
+                pipe_commands = [cmd]
+                i += 1
+                while i < len(commands) and commands[i][1] == '|':
+                    pipe_commands.append(commands[i][0])
+                    i += 1
+                # 最后一个命令（没有管道操作符）
+                if i < len(commands):
+                    pipe_commands.append(commands[i][0])
+                    i += 1
+                
+                # 执行管道命令
+                if should_execute:
+                    pipe_exit_code = self.execute_pipe_commands(pipe_commands)
+                    last_exit_code = pipe_exit_code
+                continue
+            
             # 对于第一个命令之后的命令，检查是否应该执行
             if i > 0:
                 # 前一个命令和当前命令之间的操作符
@@ -62,6 +81,12 @@ class MockOS(cmd.Cmd):
                 # 如果命令要求停止，则立即返回
                 if stop:
                     return True
+            else:
+                # 跳过不执行的命令
+                i += 1
+                continue
+            
+            i += 1
         
         return None  # onecmd 应该返回是否停止的标志
 
@@ -96,6 +121,7 @@ class MockOS(cmd.Cmd):
                 self.stdout.write(str(self.intro) + "\n")
             stop = None
             while not stop:
+                self.update_prompt()
                 if self.cmdqueue:
                     line = self.cmdqueue.pop(0)
                 else:
@@ -128,7 +154,7 @@ class MockOS(cmd.Cmd):
                     pass
 
     def parse_command_line(self, line):
-        """解析包含 && 和 || 操作符的命令行"""
+        """解析包含 &&、|| 和 | 操作符的命令行"""
         commands = []
         current_cmd = ""
         
@@ -146,6 +172,12 @@ class MockOS(cmd.Cmd):
                     commands.append((current_cmd.strip(), '||'))  # 当前命令后面是||
                 current_cmd = ""
                 i += 2
+            # 检查是否遇到管道操作符 |
+            elif line[i] == '|':
+                if current_cmd.strip():
+                    commands.append((current_cmd.strip(), '|'))  # 当前命令后面是管道
+                current_cmd = ""
+                i += 1
             else:
                 current_cmd += line[i]
                 i += 1
@@ -156,35 +188,88 @@ class MockOS(cmd.Cmd):
         
         return commands
 
-    def default(self, line):
-        """Handle commands by calling Python interpreter to execute script"""
-        # 拆分命令行（支持带空格的参数，如ls "my folder"）
-        # 检查管道操作符（单独的|，不包括||）
-        usr_pipe = False
-        i = 0
-        while i < len(line):
-            if line[i] == '|':
-                if i + 1 < len(line) and line[i+1] == '|':
-                    # 这是||操作符，跳过
-                    i += 2
-                else:
-                    # 这是管道操作符
-                    usr_pipe = True
-                    break
-            i += 1
+    def execute_pipe_commands(self, pipe_commands):
+        """执行管道命令序列"""
+        processes = []
         
-        if usr_pipe:
-            print("Pipe not supported yet")
-            return
         try:
-            import shlex
-            parts = shlex.split(line)
-            command = parts[0]
-            cmd_args = parts[1:]
-        except Exception:
-            print(f"Invalid command format: {line}")
-            return
-        
+            # 准备传递给子进程的环境变量（传递用户环境变量 + MockOS环境变量）
+            env = os.environ.copy()
+            env.update(self.mock_env.store())
+            
+            # 创建管道中的所有进程
+            for i, cmd_line in enumerate(pipe_commands):
+                try:
+                    import shlex
+                    parts = shlex.split(cmd_line)
+                    command = parts[0]
+                    cmd_args = parts[1:]
+                except Exception:
+                    print(f"Invalid command format: {cmd_line}")
+                    return 1
+                
+                # 检查是否为内置命令
+                if self.shell.is_builtin_command(command):
+                    # 内置命令在管道中的处理
+                    # 注意：大多数内置命令不适合在管道中使用，这里简化处理
+                    print(f"bash: {command}: command not found")
+                    return 127
+                
+                cmd_script = self.find_command_script(command)
+                
+                if not cmd_script or not os.path.exists(cmd_script):
+                    print(f"bash: {command}: command not found")
+                    return 127
+                
+                # 构建子进程命令：python 脚本路径 命令参数
+                subprocess_cmd = [
+                    sys.executable,  # 当前Python解释器路径
+                    cmd_script
+                ] + cmd_args
+                
+                # 设置 stdin 和 stdout
+                stdin = sys.stdin if i == 0 else processes[i-1].stdout
+                stdout = sys.stdout if i == len(pipe_commands) - 1 else subprocess.PIPE
+                
+                # 创建进程
+                process = subprocess.Popen(
+                    subprocess_cmd,
+                    env=env,
+                    stdin=stdin,
+                    stdout=stdout,
+                    stderr=sys.stderr,
+                    text=True,
+                    encoding="utf-8"
+                )
+                processes.append(process)
+                
+                # 如果不是最后一个进程，关闭前一个进程的 stdout
+                if i > 0:
+                    processes[i-1].stdout.close()
+            
+            # 等待所有进程完成并收集退出码
+            exit_codes = []
+            for process in processes:
+                process.wait()
+                exit_codes.append(process.returncode)
+            
+            # 返回管道中最后一个命令的退出码
+            return exit_codes[-1] if exit_codes else 0
+            
+        except KeyboardInterrupt:
+            # 中断所有进程
+            for process in processes:
+                try:
+                    process.terminate()
+                except:
+                    pass
+            return 130  # 标准的 SIGINT 退出码
+        except Exception as e:
+            print(f"Pipe execution failed: {str(e)}")
+            return 1
+
+    def find_command_script(self, command):
+        """查找命令脚本路径"""
         command_name = None
         
         # 处理绝对路径或相对路径的命令（如 /bin/ls 或 ./ls）
@@ -214,6 +299,27 @@ class MockOS(cmd.Cmd):
             else:
                 # PATH 中所有目录都找不到
                 cmd_script = None
+        
+        return cmd_script
+
+    def default(self, line):
+        """Handle commands by calling Python interpreter to execute script"""
+        # 拆分命令行（支持带空格的参数，如ls "my folder"）
+        try:
+            import shlex
+            parts = shlex.split(line)
+            command = parts[0]
+            cmd_args = parts[1:]
+        except Exception:
+            print(f"Invalid command format: {line}")
+            return
+        
+        # 首先检查是否为内置命令
+        if self.shell.is_builtin_command(command):
+            self._last_exit_code = self.shell.execute_builtin_command(command, cmd_args)
+            return
+        
+        cmd_script = self.find_command_script(command)
         
         if not cmd_script or not os.path.exists(cmd_script):
             print(f"bash: {command}: command not found")
@@ -246,7 +352,7 @@ class MockOS(cmd.Cmd):
         except KeyboardInterrupt:
             pass
         except Exception as e:
-            print(f"Failed to execute command {command_name}: {str(e)}")
+            print(f"Failed to execute command {command}: {str(e)}")
             self._last_exit_code = 1
 
 

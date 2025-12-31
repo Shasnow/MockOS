@@ -1,4 +1,5 @@
 import os
+import sys
 import stat
 import argparse
 from datetime import datetime
@@ -8,6 +9,7 @@ def main():
     parser = argparse.ArgumentParser(description="List files in the current directory")
     parser.add_argument("-a", "--all", action="store_true", help="show all files, including hidden files")
     parser.add_argument("-l", "--long", action="store_true", help="use a long listing format")
+    parser.add_argument("-1", "--one-per-line", dest="one_per_line", action="store_true", help="list one file per line")
     parser.add_argument("path", nargs="?", default=".", help="directory or file to list")
     
     args = parser.parse_args()
@@ -26,7 +28,7 @@ def main():
             full_path = f"{base_path}{cwd}/{path}"
     
     if not os.path.exists(full_path):
-        print(f"ls: cannot access '{path}': No such file or directory")
+        print(f"ls: cannot access '{path}': No such file or directory", file=sys.stderr)
         exit(2)
     
     if os.path.isfile(full_path):
@@ -37,13 +39,13 @@ def main():
         exit(0)  # 成功
     
     if not os.path.isdir(full_path):
-        print(f"ls: cannot access '{path}': No such file or directory")
+        print(f"ls: cannot access '{path}': No such file or directory", file=sys.stderr)
         exit(2)
     
     try:
         entries = os.listdir(full_path)
     except PermissionError:
-        print(f"ls: cannot open directory '{path}': Permission denied")
+        print(f"ls: cannot open directory '{path}': Permission denied", file=sys.stderr)
         exit(1)
     
     entries.sort()
@@ -61,16 +63,24 @@ def main():
         for item in items:
             print(item)
     else:
-        display_items = []
-        for entry in entries:
-            if not args.all and entry.startswith("."):
-                continue
-            entry_path = os.path.join(full_path, entry)
-            if os.path.isdir(entry_path):
-                display_items.append(f"\033[34m{entry}\033[0m")
-            else:
-                display_items.append(entry)
-        print("  ".join(display_items))
+        if args.one_per_line:
+            # 每行一个文件
+            for entry in entries:
+                if not args.all and entry.startswith("."):
+                    continue
+                print(entry)
+        else:
+            # 使用原来的格式（一行多个文件）
+            display_items = []
+            for entry in entries:
+                if not args.all and entry.startswith("."):
+                    continue
+                entry_path = os.path.join(full_path, entry)
+                if os.path.isdir(entry_path):
+                    display_items.append(f"\033[34m{entry}\033[0m")
+                else:
+                    display_items.append(entry)
+            print("  ".join(display_items))
     
     exit(0)  # 成功
 

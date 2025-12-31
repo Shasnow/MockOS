@@ -28,12 +28,12 @@ def main():
                 full_path = f"{base_path}{cwd}/{file_arg}"
         
         if not os.path.exists(full_path):
-            print(f"cat: {file_arg}: No such file or directory")
+            print(f"cat: {file_arg}: No such file or directory", file=sys.stderr)
             exit_code = 1  # 文件不存在
             continue
         
         if os.path.isdir(full_path):
-            print(f"cat: {file_arg}: Is a directory")
+            print(f"cat: {file_arg}: Is a directory", file=sys.stderr)
             exit_code = 1  # 是目录而不是文件
             continue
         
@@ -52,10 +52,10 @@ def main():
                             line = line.rstrip("\n") + "$\n"
                         sys.stdout.write(line)
         except PermissionError:
-            print(f"cat: {file_arg}: Permission denied")
+            print(f"cat: {file_arg}: Permission denied", file=sys.stderr)
             exit_code = 1  # 权限错误
         except Exception as e:
-            print(f"cat: {file_arg}: {str(e)}")
+            print(f"cat: {file_arg}: {str(e)}", file=sys.stderr)
             exit_code = 1  # 其他错误
     
     exit(exit_code)
