@@ -5,7 +5,7 @@ import os
 class MockOSEnv:
     OS_NAME: str = "MockOS"
     OS_VERSION: str = "1.0"
-    ARCH: str = "x86_64"
+    ARCH: str = "amd64"
     HOSTNAME: str = "localhost"
     BASE_PATH: str = "mockos/"
     CWD: str = "/root"
@@ -16,7 +16,7 @@ class MockOSEnv:
 
     @property
     def prompt(self):
-        return f"{self.USR_NAME}@{self.HOSTNAME}:{'~' if self.CWD == self.USR_HOME else self.CWD}{'#' if self.PERMISSION == 0 else '$'} "
+        return f"{self.USR_NAME}@{self.HOSTNAME}:{self.CWD.replace(self.USR_HOME, '~')}{'#' if self.PERMISSION == 0 else '$'} "
 
     def store(self):
         env = {}

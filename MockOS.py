@@ -5,8 +5,8 @@ import subprocess
 from kernel import MockOSEnv, MockOSShell
 
 class MockOS(cmd.Cmd):
-    intro = "Welcome to MockOS. Type help or ? to list commands.\n"
     mock_env = MockOSEnv()
+    intro = f"Welcome to MockOS {mock_env.OS_VERSION}\n"
     shell = MockOSShell(mock_env)
     bin_dir = f"{mock_env.BASE_PATH}/bin"
     _last_exit_code = 0
