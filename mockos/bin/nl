@@ -15,7 +15,7 @@ def main():
     
     exit_code = 0
     
-    def process_content(content_lines, source_name=""):
+    def process_content(content_lines):
         """处理内容行并输出"""
         for i, line in enumerate(content_lines, 1):
             if args.number:

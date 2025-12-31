@@ -9,15 +9,16 @@ class MockOS(cmd.Cmd):
     mock_env = MockOSEnv()
     shell = MockOSShell(mock_env)
     bin_dir = f"{mock_env.BASE_PATH}/bin"
-    
+    _last_exit_code = 0
+
     def update_prompt(self):
         self.prompt = self.mock_env.prompt
 
-    def do_exit(self, _):
+    def do_exit(self, _):  # NOQA
         """Exit the program."""
         return True
 
-    def do_EOF(self, _):
+    def do_EOF(self, _):  # NOQA
         """Exit the program."""
         print()  # 打印一个换行符
         return True
@@ -34,12 +35,12 @@ class MockOS(cmd.Cmd):
         
         i = 0
         while i < len(commands):
-            cmd, operator = commands[i]
+            command, operator = commands[i]
             
             # 检查是否需要执行管道命令序列
             if operator == '|':
                 # 收集管道中的所有命令
-                pipe_commands = [cmd]
+                pipe_commands = [command]
                 i += 1
                 while i < len(commands) and commands[i][1] == '|':
                     pipe_commands.append(commands[i][0])
@@ -69,7 +70,7 @@ class MockOS(cmd.Cmd):
             
             if should_execute:
                 # 调用父类的 onecmd 方法执行单个命令
-                stop = super().onecmd(cmd)
+                stop = super().onecmd(command)
                 
                 # 获取命令的退出码
                 if hasattr(self, '_last_exit_code'):
@@ -152,7 +153,7 @@ class MockOS(cmd.Cmd):
                 except (ImportError, KeyboardInterrupt):
                     pass
 
-    def parse_command_line(self, line):
+    def parse_command_line(self, line):  # NOQA
         """解析包含 &&、|| 和 | 操作符的命令行"""
         commands = []
         current_cmd = ""
@@ -267,7 +268,6 @@ class MockOS(cmd.Cmd):
 
     def find_command_script(self, command):
         """查找命令脚本路径"""
-        command_name = None
         
         # 处理绝对路径或相对路径的命令（如 /bin/ls 或 ./ls）
         if command.startswith("./"):
@@ -320,7 +320,7 @@ class MockOS(cmd.Cmd):
         
         if not cmd_script or not os.path.exists(cmd_script):
             print(f"bash: {command}: command not found")
-            self._last_exit_code = 127  # 标准的"command not found"退出码
+            self._last_exit_code = 127  # 标准的 "command not found" 退出码
             return
         
         # 准备传递给子进程的环境变量（传递用户环境变量 + MockOS环境变量）
