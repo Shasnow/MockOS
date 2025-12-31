@@ -237,9 +237,7 @@ class MockOS(cmd.Cmd):
                     env=env,
                     stdin=stdin,
                     stdout=stdout,
-                    stderr=sys.stderr,
-                    text=True,
-                    encoding="utf-8"
+                    stderr=sys.stderr
                 )
                 processes.append(process)
                 
