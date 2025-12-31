@@ -12,11 +12,11 @@ class MockOSEnv:
     USR_NAME: str = "root"
     USR_HOME: str = "/root"
     PATH: list = dataclasses.field(default_factory=lambda: ["/bin", "/usr/bin"])
-    PERMISSION: int = 1
+    PERMISSION: int = 0
 
     @property
     def prompt(self):
-        return f"{self.USR_NAME}@{self.HOSTNAME}:{'~' if self.CWD == self.USR_HOME else self.CWD}{'#' if self.PERMISSION == 1 else '$'} "
+        return f"{self.USR_NAME}@{self.HOSTNAME}:{'~' if self.CWD == self.USR_HOME else self.CWD}{'#' if self.PERMISSION == 0 else '$'} "
 
     def store(self):
         env = {}

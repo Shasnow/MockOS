@@ -8,7 +8,6 @@ class MockOS(cmd.Cmd):
     intro = "Welcome to MockOS. Type help or ? to list commands.\n"
     mock_env = MockOSEnv()
     shell = MockOSShell(mock_env)
-    prompt = mock_env.prompt
     bin_dir = f"{mock_env.BASE_PATH}/bin"
     
     def update_prompt(self):
