@@ -73,3 +73,11 @@ class MockOSShell:
         """Print the current user."""
         print(self.env.USR_NAME)
         return 0
+
+    def true(self, _):
+        """Return true."""
+        return 0
+
+    def false(self, _):
+        """Return false."""
+        return 1
