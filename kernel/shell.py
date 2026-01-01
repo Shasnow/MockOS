@@ -81,3 +81,8 @@ class MockOSShell:
     def false(self, _):
         """Return false."""
         return 1
+
+    def hostname(self, _):
+        """Print the hostname."""
+        print(self.env.HOST_NAME)
+        return 0
