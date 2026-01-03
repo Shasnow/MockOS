@@ -128,6 +128,8 @@ class MockOS(cmd.Cmd):
                     if self.use_rawinput:
                         try:
                             line = input(self.prompt)
+                            if line == b'\x04'.decode('utf-8'):
+                                line = 'EOF'
                         except EOFError:
                             line = 'EOF'
                         except KeyboardInterrupt:
