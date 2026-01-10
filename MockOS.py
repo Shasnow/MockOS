@@ -8,7 +8,6 @@ class MockOS(cmd.Cmd):
     mock_env = MockOSEnv()
     intro = f"Welcome to MockOS {mock_env.OS_VERSION}\n"
     shell = MockOSShell(mock_env)
-    bin_dir = f"{mock_env.BASE_PATH}/bin"
     _last_exit_code = 0
 
     def update_prompt(self):
