@@ -49,6 +49,7 @@ def main():
         exit(1)
     
     entries.sort()
+    entries = [entry.replace(".bin.py", "") for entry in entries]
     
     if args.long:
         total = 0
