@@ -276,12 +276,12 @@ class MockOS(cmd.Cmd):
             command_name = os.path.basename(command)
             # 获取当前工作目录的实际路径
             cwd_path = os.path.join(self.mock_env.BASE_PATH, self.mock_env.CWD.lstrip("/"))
-            cmd_script = os.path.join(cwd_path, command_name)
+            cmd_script = os.path.join(cwd_path, command_name+".bin.py")
         elif command.startswith("/"):
             # 绝对路径：在指定的绝对路径中查找
             # 将 MockOS 的绝对路径转换为实际文件系统路径
             abs_path = command.lstrip("/")
-            cmd_script = os.path.join(self.mock_env.BASE_PATH, abs_path)
+            cmd_script = os.path.join(self.mock_env.BASE_PATH, abs_path+".bin.py")
         else:
             # 普通命令：在 PATH 中的所有目录中查找
             command_name = command
@@ -291,7 +291,7 @@ class MockOS(cmd.Cmd):
                     real_path = os.path.join(self.mock_env.BASE_PATH, path_dir.lstrip("/"))
                 else:
                     real_path = path_dir
-                cmd_script = os.path.join(real_path, command_name)
+                cmd_script = os.path.join(real_path, command_name+".bin.py")
                 if os.path.exists(cmd_script):
                     break
             else:
